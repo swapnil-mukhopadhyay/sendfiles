@@ -1,0 +1,81 @@
+Deployment Structure :
+
+                                                         local(qna Dockerfile location)
+                                                           |
+                                                           |
+                             __LoadBalancer--->ECS(user)<----ECR(user_repo)_____	
+local--->S3(ui)--->APIGW----|                                                   |--RDS(tbl_user_info, tbl_question_info)
+                            |__LoadBalancer--->ECS(qna)<-----ECR(qna_repo)______|
+                                                           |
+                                                           |
+                                                         local(qna Dockerfile location)
+					                                     
+ 
+
+Steps :
+[x] Create RDS
+[x] Connect to RDS via MySQL Workbench and run DDL scripts
+[x] Use URI of RDS in application.properties
+[x] Build Docker Image and Push to ECR
+[x] Create Task Definition of the Component with a container containing the docker image from ECR
+[x] Create TargetGroup(Found in EC2) for the component with exposed port where the app will run
+[x] Create a Load Balancer(Found in EC2) and route to the created target group (security group should allow all http traffic to port 80)
+[x] Create a Cluster in ECS
+[x] Create a Service in ECS with the component Task Definition and its load balancer (security group should allow all TCP traffic coming from security group LoadBalancer)
+[x] Have a health check endpoint exposed in the application and use that endpoint when asked fo while creating the service.
+[x] Create and integrate Api gateway to the loadbalancer
+[x] Use the api gateway url in the UI app.
+[x] Build the ui and upload all files in dist/<project name>/ to an S3 bucket.
+[x] Have ACL turned on and make everything public. Enable read permissions for all objects from everyone.
+[x] App will work from link to index.html 
+
+ 
+ 
+Dockerizing Springboot App :
+--------------------------
+
+Install Docker Desktop and run it, check with "docker --version" in gitbash
+
+Add Dockerfile to java service :
+
+"
+		FROM openjdk:8
+		EXPOSE <port of app>
+		ADD target/<jar-name>.jar <jar-name>.jar
+		ENTRYPOINT ["java","-jar","/<jar-name>.jar"]
+															"
+From Dockerfile location :
+docker build -t <image-name>:<tag-name> .
+															
+															
+Dockerizing Angular App :
+-----------------------
+
+Add Dockerfile to main folder with angular.json
+
+"
+		FROM nginx:1.17.1-alpine
+		COPY /dist/qnaportal-ui /usr/share/nginx/html
+															"
+
+
+
+In gitbash :
+	From Dockerfile location : 
+	docker build -t <image-name>:<tag-name> .
+
+====================================================================================================================================================
+
+Setting up AWS CLI :
+-------------------------------------------
+
+Download and install aws cli
+
+IAM-> Users-> <Select User>-> Security credentials-> Access keys-> Create access key and note down
+
+aws configure
+enter Aws access key ID and password, region (check from aws console), output format (json)
+	
+====================================================================================================================================================
+
+
